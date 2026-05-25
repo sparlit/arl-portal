@@ -12,9 +12,9 @@ export async function middleware(request: NextRequest) {
 
   if (!session && !isPublicPath) {
     // Determine where to redirect based on the portal path
-    if (path.startsWith('/portal/')) {
+    if (path.startsWith('/portal/') && path !== '/portal') {
         const portalMatch = path.match(/\/portal\/([^\/]+)/);
-        if (portalMatch && portalMatch[1]) {
+        if (portalMatch && portalMatch[1] && portalMatch[1] !== 'login') {
             return NextResponse.redirect(new URL(`/portal/${portalMatch[1]}/login`, request.url));
         }
     }
@@ -26,9 +26,9 @@ export async function middleware(request: NextRequest) {
         const payload = await decrypt(session);
         const user = payload.user;
 
-        // Redirect from login to portal root if already logged in
+        // Redirect from login to portal hub if already logged in
         if (path.endsWith('/login') || path === '/login') {
-            return NextResponse.redirect(new URL('/', request.url));
+            return NextResponse.redirect(new URL('/portal', request.url));
         }
 
         // Check portal access in middleware for extra security

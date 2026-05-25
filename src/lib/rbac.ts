@@ -1,6 +1,6 @@
 export type Role = 'SUPERADMIN' | 'ADMIN' | 'MANAGER' | 'OPERATOR' | 'CUSTOMER';
 
-export type PortalType = 'it' | 'laundry' | 'crm' | 'maintenance' | 'stores' | 'transport' | 'production' | 'admin';
+export type PortalType = 'it' | 'laundry' | 'crm' | 'maintenance' | 'stores' | 'transport' | 'production' | 'admin' | 'legal' | 'i18n' | 'accessibility' | 'partners' | 'ai' | 'calendar';
 
 export interface Permission {
   action: 'create' | 'read' | 'update' | 'delete' | 'manage';
@@ -21,7 +21,13 @@ export interface Permission {
     | 'Vehicle'
     | 'Trip'
     | 'Lead'
-    | 'ProductionBatch';
+    | 'ProductionBatch'
+    | 'LegalMatter'
+    | 'Translation'
+    | 'AccessibilityAudit'
+    | 'Partner'
+    | 'BotConfig'
+    | 'Event';
 }
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -43,6 +49,12 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { action: 'manage', subject: 'Trip' },
     { action: 'manage', subject: 'Lead' },
     { action: 'manage', subject: 'ProductionBatch' },
+    { action: 'manage', subject: 'LegalMatter' },
+    { action: 'manage', subject: 'Translation' },
+    { action: 'manage', subject: 'AccessibilityAudit' },
+    { action: 'manage', subject: 'Partner' },
+    { action: 'manage', subject: 'BotConfig' },
+    { action: 'manage', subject: 'Event' },
   ],
   ADMIN: [
     { action: 'manage', subject: 'User' },
@@ -61,6 +73,12 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { action: 'manage', subject: 'Trip' },
     { action: 'manage', subject: 'Lead' },
     { action: 'manage', subject: 'ProductionBatch' },
+    { action: 'manage', subject: 'LegalMatter' },
+    { action: 'manage', subject: 'Translation' },
+    { action: 'manage', subject: 'AccessibilityAudit' },
+    { action: 'manage', subject: 'Partner' },
+    { action: 'manage', subject: 'BotConfig' },
+    { action: 'manage', subject: 'Event' },
   ],
   MANAGER: [
     { action: 'read', subject: 'User' },

@@ -84,6 +84,11 @@ export default function LandingPage() {
             {landingContent.hero.subtitle}
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <Link href="/portal">
+              <Button className="h-16 px-10 bg-slate-900 hover:bg-slate-800 text-white text-xl font-bold w-full sm:w-auto shadow-2xl transform hover:-translate-y-1 transition-all">
+                <LayoutDashboard className="mr-2 h-6 w-6" /> {language === 'en' ? 'Operations Hub' : 'مركز العمليات'}
+              </Button>
+            </Link>
             <Link href="/portal/laundry">
               <Button className="h-16 px-10 bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold w-full sm:w-auto shadow-2xl shadow-blue-500/20 transform hover:-translate-y-1 transition-all">
                 {language === 'en' ? 'Laundry Operations' : 'عمليات المغاسل'} <ChevronRight className="ml-2 h-6 w-6" />
