@@ -1,6 +1,6 @@
 export type Role = 'SUPERADMIN' | 'ADMIN' | 'MANAGER' | 'OPERATOR' | 'CUSTOMER';
 
-export type PortalType = 'it' | 'laundry' | 'crm' | 'maintenance' | 'stores' | 'transport' | 'production' | 'admin';
+export type PortalType = 'it' | 'laundry' | 'crm' | 'maintenance' | 'stores' | 'transport' | 'production' | 'admin' | 'lms';
 
 export interface Permission {
   action: 'create' | 'read' | 'update' | 'delete' | 'manage';
@@ -21,7 +21,18 @@ export interface Permission {
     | 'Vehicle'
     | 'Trip'
     | 'Lead'
-    | 'ProductionBatch';
+    | 'ProductionBatch'
+    // LMS Subjects
+    | 'Garment'
+    | 'GarmentLifecycleEvent'
+    | 'Outlet'
+    | 'ProductionStation'
+    | 'ProductionSchedule'
+    | 'ManufacturingOrder'
+    | 'Route'
+    | 'RouteStop'
+    | 'DriverDispatch'
+    | 'InventoryTransaction';
 }
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -43,6 +54,17 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { action: 'manage', subject: 'Trip' },
     { action: 'manage', subject: 'Lead' },
     { action: 'manage', subject: 'ProductionBatch' },
+    // LMS
+    { action: 'manage', subject: 'Garment' },
+    { action: 'manage', subject: 'GarmentLifecycleEvent' },
+    { action: 'manage', subject: 'Outlet' },
+    { action: 'manage', subject: 'ProductionStation' },
+    { action: 'manage', subject: 'ProductionSchedule' },
+    { action: 'manage', subject: 'ManufacturingOrder' },
+    { action: 'manage', subject: 'Route' },
+    { action: 'manage', subject: 'RouteStop' },
+    { action: 'manage', subject: 'DriverDispatch' },
+    { action: 'manage', subject: 'InventoryTransaction' },
   ],
   ADMIN: [
     { action: 'manage', subject: 'User' },
@@ -61,6 +83,17 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { action: 'manage', subject: 'Trip' },
     { action: 'manage', subject: 'Lead' },
     { action: 'manage', subject: 'ProductionBatch' },
+    // LMS
+    { action: 'manage', subject: 'Garment' },
+    { action: 'manage', subject: 'GarmentLifecycleEvent' },
+    { action: 'manage', subject: 'Outlet' },
+    { action: 'manage', subject: 'ProductionStation' },
+    { action: 'manage', subject: 'ProductionSchedule' },
+    { action: 'manage', subject: 'ManufacturingOrder' },
+    { action: 'manage', subject: 'Route' },
+    { action: 'manage', subject: 'RouteStop' },
+    { action: 'manage', subject: 'DriverDispatch' },
+    { action: 'manage', subject: 'InventoryTransaction' },
   ],
   MANAGER: [
     { action: 'read', subject: 'User' },
@@ -77,6 +110,17 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { action: 'manage', subject: 'Lead' },
     { action: 'manage', subject: 'ProductionBatch' },
     { action: 'read', subject: 'Report' },
+    // LMS
+    { action: 'manage', subject: 'Garment' },
+    { action: 'manage', subject: 'GarmentLifecycleEvent' },
+    { action: 'manage', subject: 'Outlet' },
+    { action: 'manage', subject: 'ProductionStation' },
+    { action: 'manage', subject: 'ProductionSchedule' },
+    { action: 'manage', subject: 'ManufacturingOrder' },
+    { action: 'manage', subject: 'Route' },
+    { action: 'manage', subject: 'RouteStop' },
+    { action: 'manage', subject: 'DriverDispatch' },
+    { action: 'manage', subject: 'InventoryTransaction' },
   ],
   OPERATOR: [
     { action: 'read', subject: 'Asset' },
@@ -88,6 +132,17 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     { action: 'create', subject: 'PurchaseRequisition' },
     { action: 'read', subject: 'Vehicle' },
     { action: 'create', subject: 'Trip' },
+    // LMS
+    { action: 'manage', subject: 'Garment' },
+    { action: 'create', subject: 'GarmentLifecycleEvent' },
+    { action: 'read', subject: 'Outlet' },
+    { action: 'read', subject: 'ProductionStation' },
+    { action: 'read', subject: 'ProductionSchedule' },
+    { action: 'read', subject: 'ManufacturingOrder' },
+    { action: 'read', subject: 'Route' },
+    { action: 'read', subject: 'RouteStop' },
+    { action: 'read', subject: 'DriverDispatch' },
+    { action: 'create', subject: 'InventoryTransaction' },
   ],
   CUSTOMER: [
     { action: 'read', subject: 'LaundryOrder' },

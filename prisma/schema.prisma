@@ -64,6 +64,17 @@ model Tenant {
   leads            Lead[]
   batches          ProductionBatch[]
   LaundryTicket    LaundryTicket[]
+
+  // LMS Relations
+  outlets                 Outlet[]
+  garments                Garment[]
+  garmentLifecycleEvents  GarmentLifecycleEvent[]
+  productionStations      ProductionStation[]
+  productionSchedules     ProductionSchedule[]
+  manufacturingOrders     ManufacturingOrder[]
+  routes                  Route[]
+  driverDispatches        DriverDispatch[]
+  inventoryTransactions   InventoryTransaction[]
 }
 
 model User {
@@ -488,8 +499,352 @@ model ITTicket {
 }
 
 // ==========================================
-// LAUNDRY MANAGEMENT MODULE
+// LAUNDRY MANAGEMENT SYSTEM (LMS)
 // ==========================================
+
+// 13-Stage Garment Lifecycle State Machine
+// received → branch_pickup → factory_receipt → damage_check → stain_treatment
+// → washing → drying → pressing → quality_control → sorting → folding_packaging
+// → ready_to_deliver → branch_receipt → delivered
+
+const GarmentStatus = {
+  RECEIVED: 'received',
+  BRANCH_PICKUP: 'branch_pickup',
+  FACTORY_RECEIPT: 'factory_receipt',
+  DAMAGE_CHECK: 'damage_check',
+  STAIN_TREATMENT: 'stain_treatment',
+  WASHING: 'washing',
+  DRYING: 'drying',
+  PRESSING: 'pressing',
+  QUALITY_CONTROL: 'quality_control',
+  SORTING: 'sorting',
+  FOLDING_PACKAGING: 'folding_packaging',
+  READY_TO_DELIVER: 'ready_to_deliver',
+  BRANCH_RECEIPT: 'branch_receipt',
+  DELIVERED: 'delivered',
+  CANCELLED: 'cancelled',
+} as const;
+
+// Outlet/Branch Management (100+ outlets)
+model Outlet {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  name          String
+  code          String   @unique // e.g., "BR-001", "FACTORY-MAIN"
+  type          String   @default("retail") // 'retail', 'factory', 'corporate', 'dropoff'
+  address       String?  @db.Text
+  phone         String?
+  email         String?
+  managerName   String?
+  latitude      Float?
+  longitude     Float?
+  status        String   @default("active") // 'active', 'inactive', 'maintenance'
+  openingTime   String?  // e.g., "08:00"
+  closingTime   String?  // e.g., "22:00"
+  serviceTypes  String?  @db.Text // JSON array of services offered at this outlet
+  
+  // Relations
+  garmentsReceived      Garment[]    @relation("OutletReceiving")
+  garmentsDelivered     Garment[]    @relation("OutletDelivering")
+  incomingRoutes        RouteStop[]  @relation("RouteStopOutlet")
+  manufacturingOrders   ManufacturingOrder[]
+  productionSchedules   ProductionSchedule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+// Individual Garment Tracking with QR/RFID
+model Garment {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+
+  qrCode        String   @unique // Unique QR/RFID identifier
+  rfidTag       String?  @unique // Optional RFID tag ID
+  orderId       String?
+  order         LaundryOrder? @relation(fields: [orderId], references: [id])
+  outletId      String?
+  outlet        Outlet?  @relation("OutletReceiving", fields: [outletId], references: [id])
+  customerName  String?
+  customerPhone String?
+
+  // Garment Details
+  garmentType   String?  // 'shirt', 'pants', 'suit', 'dress', 'linen', 'uniform', etc.
+  color         String?
+  brand         String?
+  fabricType    String?  // 'cotton', 'silk', 'wool', 'polyester', 'leather', etc.
+  specialCare   Boolean  @default(false)
+  notes         String?  @db.Text
+
+  // Current Status (state machine)
+  currentStatus String   @default("received")
+  statusHistory GarmentLifecycleEvent[]
+  
+  // Damage Tracking
+  hasDamage     Boolean  @default(false)
+  damageNotes   String?  @db.Text
+  damagePhoto   String?  // URL/path to damage evidence photo
+
+  // Stain Tracking
+  hasStains     Boolean  @default(false)
+  stainType     String?  // 'oil', 'wine', 'ink', 'mud', 'food', 'blood', 'unknown'
+  stainNotes    String?  @db.Text
+
+  // QC Results
+  qcPassed      Boolean?
+  qcNotes       String?  @db.Text
+  defectType    String?  // 'wrinkles', 'color_bleed', 'shrinkage', 'tear', 'missing_button', etc.
+
+  // Delivery Routing
+  deliveredToOutletId String?
+  deliveredToOutlet   Outlet? @relation("OutletDelivering", fields: [deliveredToOutletId], references: [id])
+  deliveredAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, currentStatus])
+  @@index([orderId])
+  @@index([qrCode])
+}
+
+// Garment Lifecycle Event Journal (Immutable Audit Trail)
+model GarmentLifecycleEvent {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  garmentId  String
+  garment    Garment  @relation(fields: [garmentId], references: [id], onDelete: Cascade)
+
+  fromStatus String   // Previous status
+  toStatus   String   // New status (must be valid transition)
+  
+  locationId    String? // Outlet or Station ID where event occurred
+  locationType  String? // 'outlet', 'production_station', 'transport'
+  performedBy   String? // User/operator name or ID
+  
+  autoTimestamp Boolean  @default(false) // true if system-generated
+  notes         String?  @db.Text
+  metadata      String?  @db.Text // JSON blob for scanner data, RFID reads, etc.
+
+  timestamp DateTime @default(now())
+
+  @@index([garmentId])
+  @@index([garmentId, timestamp])
+  @@index([tenantId])
+}
+
+// Production Stations (Washing, Drying, Pressing Machines)
+model ProductionStation {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  name          String
+  code          String   // e.g., "WSH-001", "DRY-003", "PRS-002"
+  type          String   // 'washing', 'drying', 'pressing', 'stain_treatment', 'qc', 'folding', 'sorting', 'packaging'
+  status        String   @default("idle") // 'idle', 'running', 'maintenance', 'offline'
+  outletId      String?
+  outlet        Outlet?  @relation(fields: [outletId], references: [id])
+
+  // Machine specifications
+  capacity      Int      @default(0) // Items per cycle
+  cycleDuration Int      @default(0) // Minutes per cycle
+  currentLoad   Int      @default(0)
+  temperature   Float?   // Current temperature (if applicable)
+  energyUsage   Float?   // kWh tracking
+
+  schedules ProductionSchedule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+// Production Schedule & Load Balancing
+model ProductionSchedule {
+  id        String @id @default(cuid())
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+
+  stationId     String?
+  station       ProductionStation? @relation(fields: [stationId], references: [id])
+  outletId      String?
+  outlet        Outlet? @relation(fields: [outletId], references: [id])
+
+  scheduledDate DateTime
+  startTime     DateTime?
+  endTime       DateTime?
+  status        String   @default("scheduled") // 'scheduled', 'in_progress', 'completed', 'cancelled'
+
+  batchId       String?
+  batchNumber   String?  // Link to manufacturing batch
+  itemCount     Int      @default(0)
+  notes         String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, scheduledDate])
+  @@index([stationId])
+}
+
+// Manufacturing Order (Factory Production Batch)
+model ManufacturingOrder {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  orderNumber   String   @unique // e.g., "MFG-20240506-001"
+  outletId      String?
+  outlet        Outlet?  @relation(fields: [outletId], references: [id])
+
+  status        String   @default("pending") // 'pending', 'in_progress', 'quality_check', 'completed', 'cancelled'
+  priority      String   @default("normal") // 'low', 'normal', 'high', 'urgent'
+  
+  totalItems    Int      @default(0)
+  completedItems Int     @default(0)
+  defectiveItems Int     @default(0)
+
+  scheduledDate DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  
+  assignedTo    String?  // Team/operator assignment
+  notes         String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, status])
+  @@index([tenantId, scheduledDate])
+}
+
+// Delivery Route Management
+model Route {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  name          String
+  code          String   @unique // e.g., "RTE-DOHA-001"
+  zone          String?  // e.g., "Doha-Central", "Lusail", "Al-Wakrah"
+  status        String   @default("active") // 'active', 'inactive', 'completed'
+  
+  driverId      String?
+  vehicleId     String?
+  
+  scheduledDate DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  
+  totalStops    Int      @default(0)
+  completedStops Int     @default(0)
+  totalDistance  Float?   // km
+  
+  stops RouteStop[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+// Route Stop (Individual pickup/delivery on a route)
+model RouteStop {
+  id      String @id @default(cuid())
+  routeId String
+  route   Route  @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  stopOrder     Int      // Sequence number
+  type          String   // 'pickup', 'delivery', 'both'
+  
+  outletId      String?
+  outlet        Outlet?  @relation("RouteStopOutlet", fields: [outletId], references: [id])
+  address       String?  @db.Text
+  contactName   String?
+  contactPhone  String?
+  
+  latitude      Float?
+  longitude     Float?
+  
+  status        String   @default("pending") // 'pending', 'arrived', 'completed', 'failed', 'skipped'
+  completedAt   DateTime?
+  failedReason  String?  @db.Text
+
+  // Items for this stop
+  garmentCount  Int      @default(0)
+  notes         String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([routeId, stopOrder])
+}
+
+// Driver Dispatch & Shift Tracking
+model DriverDispatch {
+  id        String @id @default(cuid())
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+
+  driverName    String
+  driverPhone   String?
+  vehicleId     String?
+  vehiclePlate  String?
+  
+  shiftDate     DateTime
+  startTime     DateTime?
+  endTime       DateTime?
+  status        String   @default("scheduled") // 'scheduled', 'checked_in', 'on_route', 'completed', 'absent'
+
+  routeId       String?
+  
+  totalDeliveries Int    @default(0)
+  completedDeliveries Int @default(0)
+  totalDistance  Float?
+  
+  notes         String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, shiftDate])
+}
+
+// Inventory Transaction (for chemical/consumable tracking at factory)
+model InventoryTransaction {
+  id        String @id @default(cuid())
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+
+  type      String   // 'inbound', 'outbound', 'adjustment', 'transfer'
+  itemId    String?
+  itemName  String
+  quantity  Float
+  unit      String   @default("kg") // 'kg', 'liters', 'pcs', 'rolls'
+  
+  source    String?  // 'supplier', 'warehouse', 'outlet'
+  destination String? // 'production', 'outlet', 'warehouse'
+  
+  referenceNo String? // PO number, transfer order, etc.
+  notes      String?  @db.Text
+  performedBy String?
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+}
 
 model LaundryCustomer {
   id       String @id @default(cuid())
