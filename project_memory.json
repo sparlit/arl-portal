@@ -1,0 +1,60 @@
+{
+  "version": "2.0.0",
+  "project_name": "Artemis Industrial-Grade Multi-Portal Ecosystem",
+  "status": "In Development",
+  "last_updated": "2024-05-21T12:00:00Z",
+  "architectural_principles": [
+    "PostgreSQL-first architecture",
+    "100% Free and Open Source Tools (FOSS)",
+    "Multi-tenant Modular Monolith",
+    "Granular RBAC with Portal-based permissions",
+    "Cross-departmental data linkage and workflows",
+    "Individual branding per portal and per user",
+    "Multi-level approval workflows for procurement"
+  ],
+  "modules": {
+    "core": {
+      "status": "expanding",
+      "description": "Unified authentication and permission management. Portal-specific login pages."
+    },
+    "admin": {
+      "status": "planned",
+      "description": "SuperAdmin system portal for user and credential management."
+    },
+    "it": {
+      "status": "active",
+      "enhancements": ["Knowledge Base", "Network Mapping", "Budget Tracking"]
+    },
+    "laundry": {
+      "status": "active",
+      "enhancements": ["Driver Scheduling", "Refined Order Tracking", "RFID/Barcode Simulation"]
+    },
+    "crm_sales": {
+      "status": "planned",
+      "description": "Customer 360, Leads, Sales Pipeline, Marketing."
+    },
+    "maintenance": {
+      "status": "planned",
+      "description": "Work Orders, Preventive Maintenance, Spare Parts."
+    },
+    "stores_purchase": {
+      "status": "planned",
+      "description": "Inventory, Re-order management, Multi-level procurement approvals."
+    },
+    "transport": {
+      "status": "planned",
+      "description": "Live tracking (OSM), Route optimization, Driver logs, Fleet maintenance."
+    },
+    "production": {
+      "status": "planned",
+      "description": "Batch tracking, QC Checkpoints, Process monitoring."
+    }
+  },
+  "requirements_summary": {
+    "authentication": "Unified identity, portal-based permissions, unique login designs per portal.",
+    "branding": "Dynamic themes per user, optional persistence, unique color schemes per portal.",
+    "integration": "All data linked for global dashboards and cross-departmental indents.",
+    "licensing": "Strictly 100% free and open-source libraries and tools."
+  },
+  "last_action": "Established plan for system-wide expansion and migrated to PostgreSQL schema design."
+}
